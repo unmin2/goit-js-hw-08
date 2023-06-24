@@ -1,37 +1,52 @@
 import throttle from 'lodash.throttle';
-const LOCAL_KEY = 'feedback-form-state';
 
-form = document.querySelector('.feedback-form');
+const form = document.querySelector('form.feedback-form');
+const formEmail = document.querySelector('form input');
+const formMessage = document.querySelector('form textarea');
 
-form.addEventListener('input', throttle(onInputData, 500));
+populateForm();
+
+let formData = {
+  email: '',
+  message: '',
+};
+form.addEventListener('input', throttle(onFormInput, 500));
+function onFormInput(e) {
+  formData[e.target.name] = e.target.value;
+
+  localStorage.setItem(
+    'feedback-form-state',
+    JSON.stringify({
+      ...formData,
+      email: formEmail.value,
+      message: formMessage.value,
+    })
+  );
+}
+
 form.addEventListener('submit', onFormSubmit);
-
-let dataForm = JSON.parse(localStorage.getItem(LOCAL_KEY)) || {};
-const { email, message } = form.elements;
-reloadPage();
-
-function onInputData(e) {
-  dataForm = { email: email.value, message: message.value };
-  localStorage.setItem(LOCAL_KEY, JSON.stringify(dataForm));
-}
-
-function reloadPage() {
-  if (dataForm) {
-    email.value = dataForm.email || '';
-    message.value = dataForm.message || '';
+function onFormSubmit(evt) {
+  evt.preventDefault();
+  if (formEmail.value && formMessage.value) {
+    form.reset();
+    localStorage.removeItem('feedback-form-state');
+    console.log(formData);
+    formData.email = '';
+    formData.message = '';
+  } else {
+    alert('Увага! Всі поля форми мають бути заповнені!');
   }
 }
 
-function onFormSubmit(e) {
-  e.preventDefault();
-  console.log({ email: email.value, message: message.value });
+function populateForm() {
+  const savedFormData = localStorage.getItem('feedback-form-state');
 
-  if (email.value === '' || message.value === '') {
-    return alert('Please fill in all the fields!');
+  if (savedFormData) {
+    const parsedFormData = JSON.parse(savedFormData);
+    formEmail.value = parsedFormData.email;
+    formMessage.value = parsedFormData.message;
+  } else {
+    formEmail.value = '';
+    formMessage.value = '';
   }
-
-  localStorage.removeItem(LOCAL_KEY);
-  e.currentTarget.reset();
-  dataForm = {};
 }
-
